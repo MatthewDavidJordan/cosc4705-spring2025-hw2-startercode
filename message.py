@@ -18,14 +18,12 @@ class UnencryptedIMMessage:
         self.nick = nickname
         self.msg = msg
         self.timestamp = time.time()
-    
 
     # define how this class is printed as a string
     def __repr__(self):
         dt = datetime.datetime.fromtimestamp(self.timestamp)
         humanReadableDate = dt.strftime("%m/%d/%Y %H:%M:%S")
-        return f'[{humanReadableDate}] {self.nick} --> {self.msg}'
-
+        return f"[{humanReadableDate}] {self.nick} --> {self.msg}"
 
     # outputs the message in JSON format
     def toJSON(self):
@@ -34,15 +32,18 @@ class UnencryptedIMMessage:
             "message": self.msg,
             "date": self.timestamp,
         }
-        return bytes(json.dumps(structuredMessage, sort_keys=True, indent=4),'utf-8')
-
+        return bytes(json.dumps(structuredMessage, sort_keys=True, indent=4), "utf-8")
 
     # given some json data, parses it and populates the fields
     def parseJSON(self, jsonData):
         try:
             structuredMessage = json.loads(jsonData)
             # check for required fields
-            if "message" not in structuredMessage or "nick" not in structuredMessage or "date" not in structuredMessage:
+            if (
+                "message" not in structuredMessage
+                or "nick" not in structuredMessage
+                or "date" not in structuredMessage
+            ):
                 raise json.JSONDecodeError
             self.nick = structuredMessage["nick"]
             self.msg = structuredMessage["message"].strip()
@@ -50,16 +51,22 @@ class UnencryptedIMMessage:
         except Exception as err:
             raise err
 
-
     # serializes the UnencryptedIMMessage into two parts:
-    # 
+    #
     # 1. a packed (in network-byte order) length of the JSON object.  This
     #    packed length will always be a 4-byte unsigned long.  It needs
     #    to be unpacked using struct.unpack to convert it back to an int.
-    # 
+    #
     # 2. the message in JSON format
     def serialize(self):
         jsonData = self.toJSON()
-        packedSize = struct.pack('!L', len(jsonData))
-        return (packedSize,jsonData)
-    
+        packedSize = struct.pack("!L", len(jsonData))
+        return (packedSize, jsonData)
+
+    # deserializes the UnencryptedIMMessage from the packedSize and jsonData
+    def deserialize(packedSize, jsonData):
+        unpackedSize = struct.unpack("!L", packedSize)[0]
+        message_data = jsonData.decode("utf-8")
+        msg = UnencryptedIMMessage()
+        msg.parseJSON(message_data)
+        return msg
