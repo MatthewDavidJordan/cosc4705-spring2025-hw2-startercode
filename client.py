@@ -67,6 +67,7 @@ def main():
 
     # here's a nice hint for you...
     readSet = [s] + [sys.stdin]
+
     try:
         while True:
             read, write, errors = select.select(readSet, [s], readSet)
@@ -80,19 +81,14 @@ def main():
                             log.info("Server closed the connection.")
                             sys.exit(0)
 
-                        # Unpack length
                         unpackedSize = struct.unpack("!L", packedLen)[0]
 
-                        # Receive the actual JSON message
                         message_data = sock.recv(unpackedSize, socket.MSG_WAITALL)
                         if not message_data:
                             log.info("Server closed the connection.")
                             sys.exit(0)
 
-                        # Deserialize the message
                         msg = UnencryptedIMMessage.deserialize(packedLen, message_data)
-
-                        # Print the received message
                         print(msg)
 
                     except Exception as e:
@@ -104,12 +100,9 @@ def main():
                     if message:
                         msg = UnencryptedIMMessage(args.nickname, message)
                         (packedSize, jsonData) = msg.serialize()
-
-                        # Send the length first
                         s.sendall(packedSize)
-
-                        # Send the actual JSON message
                         s.sendall(jsonData)
+
     except KeyboardInterrupt:
         log.info("\nKeyboard Interrupt detected. Exiting...")
         s.close()
